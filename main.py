@@ -1,6 +1,7 @@
 import os
 import sys
 import pickle
+import random
 
 # Loading images
 import requests
@@ -21,10 +22,8 @@ from sklearn.cluster import KMeans
 
 # Selenium
 from selenium import webdriver
-#from selenium.webdriver.common.keys import Keys
-#from selenium.webdriver.support.ui import WebDriverWait
-#from selenium.webdriver.support import expected_conditions as EC
-#from selenium.webdriver.common.by import By
+from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
 
 
 url = "https://duckduckgo.com/?q=%s&iar=images&iax=images&ia=images"
@@ -98,7 +97,11 @@ def get_word_color(word):
     centers = km.cluster_centers_
     predicted = sorted(km.predict(colors))
     i = stats.mode(predicted).mode
-    COLORS[word] = [int(j) for j in centers[i][0]]
+    c = [int(j) for j in centers[i][0]]
+    while c in COLORS.values():
+        index = random.randint(0, 2)
+        c[index] += random.randint(-2, 2)
+    COLORS[word] = c
     return COLORS[word]
 
 
@@ -162,6 +165,7 @@ def save_dict():
     with open('colors.pkl', 'wb') as f:
         pickle.dump(COLORS, f)
 
+
 if __name__ == '__main__':
     args = sys.argv
     if len(sys.argv) == 1:
@@ -172,7 +176,9 @@ if __name__ == '__main__':
     if command == "--add-new-books":
         global driver, nlp, COLORS
 
-        driver = webdriver.Firefox()
+        options = Options()
+        options.headless = True
+        driver = webdriver.Firefox(options=options)
         print('Webdriver is loaded')
         nlp = spacy.load('en_core_web_lg')
         print("Natural language processor is loaded")
@@ -214,15 +220,11 @@ if __name__ == '__main__':
             print("Book \"%s\" has been successfully parsed!" % book)
             parsed_books.add(book)
 
+        driver.close()
+
         # Saving gotten data
         with open('parsed_books.pkl', 'wb') as f:
             pickle.dump(parsed_books, f)
 
         with open('colors.pkl', 'wb') as f:
             pickle.dump(COLORS, f)
-
-
-
-
-
-
